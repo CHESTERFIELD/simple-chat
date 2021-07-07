@@ -1,0 +1,25 @@
+# IDE specific folder for JetBrains IDEs
+.idea/
+
+# Virtual environment
+venv
+
+# Python items
+cython_debug/
+python_build/
+yapf_virtual_environment/
+python_pylint_venv/
+.coverage*
+.eggs
+htmlcov/
+dist/
+*.egg
+py27_gevent/
+py27_native/
+py3[0-9]_gevent/
+py3[0-9]_native/
+a.out
+src/python/grpcio_*/LICENSE
+src/python/grpcio_status/grpc_status/google/rpc/status.proto
+.pytype
+*.egg-info

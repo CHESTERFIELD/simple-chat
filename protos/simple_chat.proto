@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+// Interface exported by the server
+service SimpleChat {
+
+  // Obtains list of user
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+
+  // Send retrieved message to user
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+
+  // Subscribe user to receive messages. Results are
+  // streamed rather than returned at once
+  rpc ReceiveMessages(ReceiveMessagesRequest) returns (stream Message);
+}
+
+// User schema
+message User {
+  // user login
+  string login = 1;
+
+  // user full name
+  string full_name = 2;
+}
+
+// Message schema
+// Represented chat message between specific users
+message Message {
+  // user's login who send message
+  string sender = 1;
+
+  // user's login who retrieve message
+  string recipient = 2;
+
+  // timestamp is set by server
+  google.protobuf.Timestamp created = 3;
+
+  // message's text
+  string body = 4;
+}
+
+// Request for obtaining list of users
+message GetUsersRequest {
+  // Empty
+}
+
+// Return list of users
+message GetUsersResponse {
+  repeated User users = 1;
+}
+
+// Request for sending retrieved message
+message SendMessageRequest {
+  Message message = 1;
+}
+
+// Response on submitting of message
+message SendMessageResponse {
+  // Empty
+}
+
+// Request to subscribing for receiving messages
+message ReceiveMessagesRequest {
+  // user's login who wants to receive messages from other ones
+  string login = 1;
+}
