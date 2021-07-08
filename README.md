@@ -1,3 +1,4 @@
+##SERVER
 For obtaining the list of users we use the following command:
 ```
 grpcurl -plaintext -d '' localhost:50052 SimpleChat.GetUsers
@@ -17,4 +18,15 @@ grpcurl -plaintext -d '{"message": {"sender": "[any_exist_login]", "recipient": 
 If server don't use reflection, we use the command below:
 ```
 grpcurl -import-path ./protos -proto simple_chat.proto list/describe
+```
+
+##CLIENT
+For subscribe to receiving messages by client use the command below:
+```
+python simple_chat_client.py --json-data '{"login": "1313"}' --method receive_messages
+```
+
+For send message to user by client use the command below:
+```
+python simple_chat_client.py --json-data '{"message": {"sender": "1212", "recipient": "1313", "body": "Some text"}}' --method send_message
 ```
