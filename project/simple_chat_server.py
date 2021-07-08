@@ -1,3 +1,4 @@
+"""Simple chat application"""
 import datetime
 import json
 import time
@@ -11,13 +12,13 @@ import simple_chat_pb2
 import simple_chat_pb2_grpc
 
 
-def init_users(file_path: str) -> list:
-    """Initialize list of User from json file"""
+def load_users(file_path: str) -> list:
+    """Load list of users from json file"""
     users = []
     with open(file_path, "r") as f:
-        for user in json.loads(f.read()):
+        for user in json.load(f):
             new_user = simple_chat_pb2.User(
-                login=user.get("login", ""),
+                login=user['login'],
                 full_name=user.get("full_name", "")
             )
             users.append(new_user)
@@ -28,39 +29,44 @@ def init_users(file_path: str) -> list:
 class SimpleChatServicer(simple_chat_pb2_grpc.SimpleChatServicer):
     """Provides methods that implement functionality of simple chat server."""
 
-    def __init__(self):
-        self._users = init_users('users.json')
-        self._queue = []
-
-    @property
-    def users(self):
-        return self._users
-
-    @property
-    def queue(self):
-        return self._queue
+    def __init__(self, users):
+        self._users = users
+        self._queue = {}
 
     def GetUsers(self, request, context):
-        return simple_chat_pb2.GetUsersResponse(users=self.users)
+        """Obtains list of user"""
+        return simple_chat_pb2.GetUsersResponse(users=self._users)
 
     def SendMessage(self, request, context):
+        """Send retrieved message to user"""
+        timestamp = Timestamp()
+        timestamp.FromDatetime(datetime.datetime.now())
+
         message = simple_chat_pb2.Message(
             sender=request.message.sender,
             recipient=request.message.recipient,
-            created=Timestamp().FromDatetime(datetime.datetime.now()),
+            created=timestamp,
             body=request.message.body,
         )
-        self.queue.append(message)
+
+        if request.message.recipient in self._queue:
+            self._queue[request.message.recipient].append(message)
+        else:
+            self._queue[request.message.recipient] = [message, ]
 
         return simple_chat_pb2.SendMessageResponse()
 
     def ReceiveMessages(self, request, context):
+        """Subscribe user to receive messages. Results are
+        streamed rather than returned at once
+        """
         while True:
+            if request.login in self._queue:
+                for message in self._queue[request.login]:
+                    if message.recipient == request.login:
+                        self._queue[request.login].remove(message)
+                        yield message
             time.sleep(1)
-            for message in self.queue:
-                if message.recipient == request.login:
-                    self.queue.remove(message)
-                    yield message
 
 
 def enable_reflection(server):
@@ -75,24 +81,23 @@ def enable_reflection(server):
 def create_server(server_address):
     """Create server and doing additional actions with server here"""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    simple_chat_pb2_grpc.add_SimpleChatServicer_to_server(SimpleChatServicer(), server)
 
-    enable_reflection(server)
+    users = load_users('users.json')
+    simple_chat_pb2_grpc.add_SimpleChatServicer_to_server(
+        SimpleChatServicer(users),
+        server
+    )
+    # enable_reflection(server)
 
-    port = server.add_insecure_port(server_address)
-    return server, port
-
-
-def serve(server):
-    """Launch created server"""
-    server.start()
-    server.wait_for_termination()
+    server.add_insecure_port(server_address)
+    return server
 
 
 def main():
     """Start point"""
-    server, unused_port = create_server('[::]:50052')
-    serve(server)
+    server = create_server('[::]:50052')
+    server.start()
+    server.wait_for_termination()
 
 
 if __name__ == '__main__':

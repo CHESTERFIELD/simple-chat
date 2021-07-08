@@ -13,3 +13,8 @@ For sending some message to user we use the command below:
 ```
 grpcurl -plaintext -d '{"message": {"sender": "[any_exist_login]", "recipient": "[any_exist_login]", "body": "[message_text]"}}' localhost:50052 SimpleChat.SendMessage
 ```
+
+If server don't use reflection, we use the command below:
+```
+grpcurl -import-path ./protos -proto simple_chat.proto list/describe
+```
