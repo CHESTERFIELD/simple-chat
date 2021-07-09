@@ -1,8 +1,9 @@
 """Simple chat application for client"""
 import argparse
-import json
 
 import grpc
+from google.protobuf.internal.well_known_types import Timestamp
+from google.protobuf.json_format import MessageToDict
 
 import simple_chat_pb2
 import simple_chat_pb2_grpc
@@ -11,102 +12,93 @@ import simple_chat_pb2_grpc
 def create_arg_parser():
     """Creates and returns the ArgumentParser object"""
     parser = argparse.ArgumentParser(description='Simple chat client')
-    parser.add_argument('-d', '--json-data', help='String that contains json format',
-                        default='{}', type=str
+    parser.add_argument('method', help='Type of method', type=str,
+                        choices=['users', 'send', 'receive']
                         )
-    parser.add_argument('-m', '--method', help='Type of method', type=str,
-                        choices=['get_users', 'send_message', 'receive_messages']
-                        )
+    parser.add_argument('-s', '--sender', help='Sender login', type=str)
+    parser.add_argument('-r', '--recipient', help='Recipient login', type=str)
+    parser.add_argument('-b', '--body', help='Message body', type=str)
+
     return parser
 
 
 def get_users(stub):
     """Get list of user"""
     users = stub.GetUsers(simple_chat_pb2.GetUsersRequest())
-    print(users)
+    for user in MessageToDict(users)['users']:
+        print("User login: {}. User full name: {}"
+              .format(user['login'], user['fullName'])
+              )
 
 
-def validate_send_message_data(data: dict) -> dict:
-    """Validation that all necessary data is given
-    :return: dict of message data
-    """
-    if 'message' not in data:
-        raise ValueError('Message has not been received')
-
-    for field in ('sender', 'recipient', 'body'):
-        if not data['message'].get(field, None):
-            raise ValueError('Message must have "{}" field'.format(field))
-
-    return data["message"]
+def validate_send_message_data(data):
+    """Validation that all necessary data is given"""
+    if not all((data.body, data.recipient, data.sender)):
+        raise ValueError(
+            'The following fields are required: "sender", "body", "recipient"'
+        )
 
 
 def send_message(stub, data):
     """Send retrieved message data to recipient"""
-    message = validate_send_message_data(data)
+    validate_send_message_data(data)
 
-    send_message = simple_chat_pb2.Message(
-        sender=message["sender"],
-        recipient=message["recipient"],
-        body=message["body"],
+    simple_message = simple_chat_pb2.Message(
+        sender=data.sender,
+        recipient=data.recipient,
+        body=data.body,
     )
 
-    response = stub.SendMessage(
-        simple_chat_pb2.SendMessageRequest(message=send_message)
+    stub.SendMessage(
+        simple_chat_pb2.SendMessageRequest(message=simple_message)
     )
-    print(response)
+    print("Message was sent")
 
 
-def validate_receive_messages_data(data: dict) -> str:
-    """Validation that all necessary data is given
-    :return: string of user's login
-    """
-    if 'login' not in data or not data['login']:
+def validate_receive_messages_data(data):
+    """Validation that all necessary data is given"""
+    if not data.recipient:
         raise ValueError('Login has not been received')
-
-    return data['login']
 
 
 def receive_messages(stub, data):
     """Subscribe client to receive messages """
-    login = validate_receive_messages_data(data)
+    validate_receive_messages_data(data)
 
     messages_iterator = stub.ReceiveMessages(
-        simple_chat_pb2.ReceiveMessagesRequest(login=login)
+        simple_chat_pb2.ReceiveMessagesRequest(login=data.recipient)
     )
+
     for message in messages_iterator:
-        print(message)
+        print("From: {0}. \nTo: {1}. \nTime: {2}. \nMessage: '{3}'."
+              .format(message.sender,
+                      message.recipient,
+                      Timestamp.ToDatetime(message.created),
+                      message.body
+                      )
+              )
 
 
-def validate_parser_arguments(json_data: str) -> dict:
-    """Validation that received data is json string"""
-    try:
-        data = json.loads(json_data)
-    except Exception as ex:
-        raise ex
-
-    return data
-
-
-def submit_request(stub, method, data):
+def submit_request(stub, data):
     """Defining what request will be submitted"""
-    if method == 'get_users':
+    if data.method == 'users':
         get_users(stub)
-    elif method == 'send_message':
+    elif data.method == 'send':
         send_message(stub, data)
-    elif method == 'receive_messages':
+    elif data.method == 'receive':
         receive_messages(stub, data)
 
 
-def run():
+def run(host, port):
     """Start point"""
     arg_parser = create_arg_parser()
     parsed_args = arg_parser.parse_args()
-    data = validate_parser_arguments(parsed_args.json_data)
 
-    with grpc.insecure_channel('localhost:50052') as channel:
+    server_address = host + ":" + str(port)
+    with grpc.insecure_channel(server_address) as channel:
         stub = simple_chat_pb2_grpc.SimpleChatStub(channel)
-        submit_request(stub=stub, method=parsed_args.method, data=data)
+        submit_request(stub, parsed_args)
 
 
 if __name__ == "__main__":
-    run()
+    run('localhost', 50052)
