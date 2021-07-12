@@ -3,7 +3,6 @@ import argparse
 
 import grpc
 from google.protobuf.internal.well_known_types import Timestamp
-from google.protobuf.json_format import MessageToDict
 
 import simple_chat_pb2
 import simple_chat_pb2_grpc
@@ -24,10 +23,10 @@ def create_arg_parser():
 
 def get_users(stub):
     """Get list of user"""
-    users = stub.GetUsers(simple_chat_pb2.GetUsersRequest())
-    for user in MessageToDict(users)['users']:
+    users_response = stub.GetUsers(simple_chat_pb2.GetUsersRequest())
+    for user in users_response.users:
         print("User login: {}. User full name: {}"
-              .format(user['login'], user['fullName'])
+              .format(user.login, user.full_name)
               )
 
 

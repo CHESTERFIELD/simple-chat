@@ -96,12 +96,13 @@ def create_server(server_address, etcd_port):
     return server
 
 
-def main():
+def main(server_host, server_port, etcd_port):
     """Start point"""
-    server = create_server('[::]:50052', 2379)
+    server_address = server_host + ":" + str(server_port)
+    server = create_server(server_address, etcd_port)
     server.start()
     server.wait_for_termination()
 
 
 if __name__ == '__main__':
-    main()
+    main('localhost', 50052, 2379)
