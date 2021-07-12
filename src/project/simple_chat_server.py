@@ -1,4 +1,5 @@
 """Simple chat application"""
+import os
 import time
 from datetime import datetime
 import json
@@ -79,12 +80,9 @@ def enable_reflection(server):
     reflection.enable_server_reflection(SERVICE_NAMES, server)
 
 
-def create_server(server_address, etcd_port):
+def create_server(server_address, etcd_client):
     """Create server and doing additional actions with server here"""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-
-    etcd_client = EtcdClient(etcd_port)
-    load_users_to_store('users.json', etcd_client)
 
     simple_chat_pb2_grpc.add_SimpleChatServicer_to_server(
         SimpleChatServicer(etcd_client),
@@ -96,13 +94,21 @@ def create_server(server_address, etcd_port):
     return server
 
 
-def main(server_host, server_port, etcd_port):
+def main(server_host, server_port, etcd_client_host, etcd_client_port):
     """Start point"""
+    etcd_client = EtcdClient(host=etcd_client_host, port=etcd_client_port, )
+    load_users_to_store('users.json', etcd_client)
+
     server_address = "{0}:{1}".format(server_host, server_port)
-    server = create_server(server_address, etcd_port)
+    server = create_server(server_address, etcd_client)
     server.start()
     server.wait_for_termination()
 
 
 if __name__ == '__main__':
-    main('localhost', 50052, 2379)
+    host = os.environ['SERVER_HOST']
+    port = os.environ['SERVER_PORT']
+    etcd_host = os.environ['ETCD_SERVER_HOST']
+    etcd_port = os.environ['ETCD_SERVER_PORT']
+
+    main(host, port, etcd_host, etcd_port)

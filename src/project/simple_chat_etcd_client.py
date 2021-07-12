@@ -11,7 +11,7 @@ class EtcdClient:
     USER_PREFIX_KEY = 'user/'
     USER_MESSAGE_QUEUE_PREFIX_KEY = 'message/queue/user/{user_id}'
 
-    def __init__(self, port, host='127.0.0.1'):
+    def __init__(self,  host='localhost', port=2379):
         self._client = etcd3.client(host=host, port=port)
 
     def get_users(self):
@@ -72,7 +72,7 @@ class EtcdClient:
 
 
 def run():
-    client = EtcdClient(2379)
+    client = EtcdClient()
     messages_iterator, cancel = client.watch_user_queue_messages('1313')
     for message in messages_iterator:
         print(message)

@@ -1,0 +1,32 @@
+version: "3.4"
+
+networks:
+  simple-chat:
+    driver: bridge
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: ./docker/server/Dockerfile
+    env_file: .env
+    volumes:
+    - ./src:/src
+    ports:
+      - 50052:50052
+    depends_on:
+      - etcd
+    networks:
+      - simple-chat
+
+  etcd:
+    image: bitnami/etcd:3.5.0
+    env_file: .env
+#    environment:
+#      - ALLOW_NONE_AUTHENTICATION=yes
+#      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    ports:
+      - 2379:2379
+      - 2380:2380
+    networks:
+      - simple-chat

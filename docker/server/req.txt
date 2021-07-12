@@ -1,5 +1,7 @@
+etcd3==0.12.0
 grpcio==1.38.1
 grpcio-reflection==1.38.1
 grpcio-tools==1.38.1
 protobuf==3.17.3
 six==1.16.0
+tenacity==8.0.0
