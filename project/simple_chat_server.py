@@ -1,4 +1,5 @@
 """Simple chat application"""
+import time
 from datetime import datetime
 import json
 from concurrent import futures
@@ -50,14 +51,23 @@ class SimpleChatServicer(simple_chat_pb2_grpc.SimpleChatServicer):
 
     def ReceiveMessages(self, request, context):
         """Subscribe user to receive messages. Results are
-        streamed rather than returned at once
+        streamed rather than returned at once.
+        Deleting queued messages from the store after getting their.
         """
-        for message in self._store_client.get_user_queue_messages(request.login):
-            message = json.loads(message[0].decode('utf-8'))
-            timestamp = Timestamp()
-            timestamp.FromDatetime(datetime.fromtimestamp(message["created"]))
-            message['created'] = timestamp
-            yield simple_chat_pb2.Message(**message)
+        while True:
+            messages_iterator = self._store_client.get_user_queue_messages(request.login)
+
+            for queue_message in messages_iterator:
+                message = json.loads(queue_message[0].decode('utf-8'))
+                timestamp = Timestamp()
+                timestamp.FromDatetime(datetime.fromtimestamp(message["created"]))
+                message['created'] = timestamp
+
+                yield simple_chat_pb2.Message(**message)
+
+                self._store_client.delete_user_queue_message(queue_message[1].key.decode('utf-8'))
+
+            time.sleep(1)
 
 
 def enable_reflection(server):

@@ -14,11 +14,11 @@ class EtcdClient:
     def __init__(self, port, host='127.0.0.1'):
         self._client = etcd3.client(host=host, port=port)
 
-    def get_users(self) -> tuple:
+    def get_users(self):
         """Getting sequence of users"""
-        users = self._client.get_prefix(self.USER_PREFIX_KEY)
+        users_iterator = self._client.get_prefix(self.USER_PREFIX_KEY)
 
-        return users
+        return users_iterator
 
     def get_user(self, user_login: str):
         """Getting user"""
@@ -33,44 +33,49 @@ class EtcdClient:
         )
 
     def put_message(self, message: dict):
-        """Adding new message to store"""
-        max_key = self.get_max_key_user_queue_message(message['recipient']) + 1
+        """Adding new queue message to store"""
+        unique_key = self.create_unique_queue_message_key(message)
 
         self._client.put(
             self.USER_MESSAGE_QUEUE_KEY.format(
                 user_id=message['recipient'],
-                message_id=max_key),
+                message_id=unique_key),
             json.dumps(message)
         )
 
-    def get_max_key_user_queue_message(self, user_login) -> int:
-        """Finding max key value of queued messages for received user login"""
-        messages = self._client.get_prefix(
-            self.USER_MESSAGE_QUEUE_PREFIX_KEY.format(user_id=user_login),
-            keys_only=True
-        )
-        messages_keys = [message[1].key.decode('utf-8') for message in messages]
+    @staticmethod
+    def create_unique_queue_message_key(message: dict) -> str:
+        """Creating unique key value for message"""
+        unique_key = message['sender'] + str(message['created']) + message['recipient']
 
-        max_key = int(max(messages_keys).split('/')[-1]) if messages_keys else 0
+        return unique_key
 
-        return max_key
-
-    def get_user_queue_messages(self, user_login) -> tuple:
-        """Getting sequence of queued messages for received user's login.
-        Deleting queued messages from the store after getting their.
-        """
+    def get_user_queue_messages(self, user_login):
+        """Getting sequence of queued messages for received user login"""
 
         prefix = self.USER_MESSAGE_QUEUE_PREFIX_KEY.format(user_id=user_login)
-        messages = self._client.get_prefix(prefix)
+        messages_iterator = self._client.get_prefix(prefix)
 
-        self._client.delete_prefix(prefix)
+        return messages_iterator
 
-        return messages
+    def delete_user_queue_message(self, message_key: str):
+        """Deleting queued message from the store"""
+        self._client.delete(message_key)
+
+    def watch_user_queue_messages(self, user_login):
+        """Watcher for new queued messages by user login"""
+
+        prefix = self.USER_MESSAGE_QUEUE_PREFIX_KEY.format(user_id=user_login)
+        messages_iterator, cancel = self._client.watch_prefix(prefix)
+
+        return messages_iterator, cancel
 
 
 def run():
     client = EtcdClient(2379)
-    client.get_user_queue_messages('1313')
+    messages_iterator, cancel = client.watch_user_queue_messages('1313')
+    for message in messages_iterator:
+        print(message)
 
 
 if __name__ == '__main__':

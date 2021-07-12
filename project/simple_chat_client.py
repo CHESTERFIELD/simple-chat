@@ -70,7 +70,7 @@ def receive_messages(stub, data):
     )
 
     for message in messages_iterator:
-        print("From: {0}. \nTo: {1}. \nTime: {2}. \nMessage: '{3}'."
+        print("From: {0}. \nTo: {1}. \nTime: {2}. \nMessage: '{3}'.\n"
               .format(message.sender,
                       message.recipient,
                       Timestamp.ToDatetime(message.created),
