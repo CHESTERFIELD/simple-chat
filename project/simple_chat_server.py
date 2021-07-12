@@ -98,7 +98,7 @@ def create_server(server_address, etcd_port):
 
 def main(server_host, server_port, etcd_port):
     """Start point"""
-    server_address = server_host + ":" + str(server_port)
+    server_address = "{0}:{1}".format(server_host, server_port)
     server = create_server(server_address, etcd_port)
     server.start()
     server.wait_for_termination()

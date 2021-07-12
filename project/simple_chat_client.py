@@ -11,7 +11,9 @@ import simple_chat_pb2_grpc
 def create_arg_parser():
     """Creates and returns the ArgumentParser object"""
     parser = argparse.ArgumentParser(description='Simple chat client')
-    parser.add_argument('method', help='Type of method', type=str,
+    parser.add_argument('host', help='Host of the server', type=str)
+    parser.add_argument('port', help='Port of the server', type=str)
+    parser.add_argument('method', help='Type of the method', type=str,
                         choices=['users', 'send', 'receive']
                         )
     parser.add_argument('-s', '--sender', help='Sender login', type=str)
@@ -88,16 +90,16 @@ def submit_request(stub, data):
         receive_messages(stub, data)
 
 
-def run(host, port):
+def run():
     """Start point"""
     arg_parser = create_arg_parser()
     parsed_args = arg_parser.parse_args()
 
-    server_address = host + ":" + str(port)
+    server_address = "{0}:{1}".format(parsed_args.host, parsed_args.port)
     with grpc.insecure_channel(server_address) as channel:
         stub = simple_chat_pb2_grpc.SimpleChatStub(channel)
         submit_request(stub, parsed_args)
 
 
 if __name__ == "__main__":
-    run('localhost', 50052)
+    run()
