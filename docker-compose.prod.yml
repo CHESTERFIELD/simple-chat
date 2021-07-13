@@ -6,12 +6,7 @@ networks:
 
 services:
   server:
-    build:
-      context: .
-      dockerfile: ./docker/server/Dockerfile
-    env_file: .env
-    volumes:
-    - ./src:/src
+    image: chesterfield10/simple-chat-app:latest
     ports:
       - 50052:50052
     depends_on:
@@ -21,7 +16,6 @@ services:
 
   etcd:
     image: bitnami/etcd:3.5.0
-    env_file: .env
     ports:
       - 2379:2379
       - 2380:2380
