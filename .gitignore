@@ -5,6 +5,7 @@
 venv
 
 # Python items
+*__pycache__/
 cython_debug/
 python_build/
 yapf_virtual_environment/
