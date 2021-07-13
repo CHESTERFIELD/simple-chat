@@ -1,32 +1,43 @@
-##SERVER
-For obtaining the list of users we use the following command:
+##Simple chat application created with gRPC framework and "etcd" key-value storage
+###SERVER
+
+* For launching the application in development mode 
+write the following command:
 ```
-grpcurl -plaintext -d '' localhost:50052 SimpleChat.GetUsers
+docker-compose up
+```
+**NOTE**: you must have docker and docker-compose on your machine
+
+* for loading some users to etcd service write following commands:
+```
+docker exec -it simple_chat_server_1 bash
+python run_load_users.py
 ```
 
+### CLIENT
+* In order to submit any client request we have to join to 
+  interactivity mode into the server container:
+```
+docker exec -it simple_chat_server_1 bash
+```
+* for getting users from etcd storage we should call next command:
+```
+python simple_chat_client.py users
 
-For subscriber to receiving message we should use the following command:
+# to get more helpful information about arguments
+python simple_chat_client.py -h
 ```
-grpcurl -plaintext -d '{"login": "[any_exist_login]"}' localhost:50052 SimpleChat.ReceiveMessages
+* for sending message to user, call the next command:
 ```
+python simple_chat_client.py send -s [sender] -r [recipient] -b '[body]'
 
-For sending some message to user we use the command below:
+# where [sender] is a sender login, 
+# [recipient] is a recipient login 
+# and [body] is a message text 
 ```
-grpcurl -plaintext -d '{"message": {"sender": "[any_exist_login]", "recipient": "[any_exist_login]", "body": "[message_text]"}}' localhost:50052 SimpleChat.SendMessage
+* for subscribing to message as user write the command below:
 ```
+python simple_chat_client.py retreive -r [recipient]
 
-If server don't use reflection, we use the command below:
-```
-grpcurl -import-path ./protos -proto simple_chat.proto list/describe
-```
-
-##CLIENT
-For subscribe to receiving messages by client use the command below:
-```
-python simple_chat_client.py --json-data '{"login": "1313"}' --method receive_messages
-```
-
-For send message to user by client use the command below:
-```
-python simple_chat_client.py --json-data '{"message": {"sender": "1212", "recipient": "1313", "body": "Some text"}}' --method send_message
+# where [recipient] is a recipient login  
 ```
