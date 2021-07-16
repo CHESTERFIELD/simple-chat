@@ -1,5 +1,6 @@
-##Simple chat application created with gRPC framework and "etcd" key-value storage
-###SERVER
+## Simple chat application created with gRPC framework and "etcd" key-value storage
+
+### SERVER
 
 * For launching the application in development mode 
 write the following command:

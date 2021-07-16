@@ -6,7 +6,6 @@ from google.protobuf.internal.well_known_types import Timestamp
 
 import simple_chat_pb2
 import simple_chat_pb2_grpc
-from simple_chat_etcd_storage import User, Message
 
 
 def create_arg_parser():
@@ -30,8 +29,8 @@ def get_users(stub):
     response = stub.GetUsers(simple_chat_pb2.GetUsersRequest())
 
     for user in response.users:
-        user = User(login=user.login, full_name=user.full_name)
-        print(user)
+        print("User login: {}. "
+              "User full name: {}".format(user.login, user.full_name))
 
 
 def validate_send_message_data(sender, recipient, body):
@@ -68,10 +67,11 @@ def receive_messages(stub, recipient):
         simple_chat_pb2.ReceiveMessagesRequest(login=recipient))
 
     for message in messages:
-        message = Message(sender=message.sender, recipient=message.recipient,
-                          created=Timestamp.ToDatetime(message.created),
-                          body=message.body)
-        print(message)
+        print("From: {}. \nTo: {}. \nTime: {}. \nMessage: '{}'.\n".format(
+            message.sender,
+            message.recipient,
+            Timestamp.ToDatetime(message.created),
+            message.body))
 
 
 def submit_request(stub, data):
@@ -84,10 +84,14 @@ def submit_request(stub, data):
         receive_messages(stub, data.recipient)
 
 
+def get_parsed_args():
+    arg_parser = create_arg_parser()
+    return arg_parser.parse_args()
+
+
 def run():
     """Start point"""
-    arg_parser = create_arg_parser()
-    parsed_args = arg_parser.parse_args()
+    parsed_args = get_parsed_args()
 
     server_address = "{}:{}".format(parsed_args.host, parsed_args.port)
     with grpc.insecure_channel(server_address) as channel:
