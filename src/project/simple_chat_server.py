@@ -67,7 +67,7 @@ def enable_reflection(server):
 
 
 def create_server(server_address: str, storage: Storage,
-                  is_enable_reflection: bool) -> grpc.server:
+                  is_enable_reflection: bool = False) -> grpc.server:
     """Create server and doing additional actions with server here"""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 

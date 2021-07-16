@@ -84,10 +84,14 @@ def submit_request(stub, data):
         receive_messages(stub, data.recipient)
 
 
+def get_parsed_args():
+    arg_parser = create_arg_parser()
+    return arg_parser.parse_args()
+
+
 def run():
     """Start point"""
-    arg_parser = create_arg_parser()
-    parsed_args = arg_parser.parse_args()
+    parsed_args = get_parsed_args()
 
     server_address = "{}:{}".format(parsed_args.host, parsed_args.port)
     with grpc.insecure_channel(server_address) as channel:
