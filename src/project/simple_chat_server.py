@@ -40,7 +40,7 @@ class SimpleChatServicer(simple_chat_pb2_grpc.SimpleChatServicer):
         streamed rather than returned at once.
         Deleting queued messages from the storage after getting their.
         """
-        while True:
+        while context.is_active():
             messages = self._storage.get_user_queue_messages(request.login)
 
             for message in messages:
@@ -54,7 +54,8 @@ class SimpleChatServicer(simple_chat_pb2_grpc.SimpleChatServicer):
 
                 self._storage.delete_user_queue_message(message)
 
-            time.sleep(1)
+            if context.is_active():
+                time.sleep(1)
 
 
 def enable_reflection(server):

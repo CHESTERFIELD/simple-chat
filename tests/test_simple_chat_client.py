@@ -10,23 +10,12 @@ import simple_chat_client
 import simple_chat_pb2
 
 
-class TestClient(unittest.TestCase):
-
-    @staticmethod
-    def get_mock_parser(method_type: str) -> Mock:
-        """Mocks arguments parser object"""
-        mock_parser = Mock()
-        mock_parser.method = method_type
-        mock_parser.sender = '123'
-        mock_parser.recipient = '111'
-        mock_parser.body = 'Hello'
-
-        return mock_parser
+class ClientTestCase(unittest.TestCase):
 
     @patch('simple_chat_client.get_users')
     def test_submit_request_get_users(self, get_users):
-        """Tests of simple_chat_client.submit_request 'users branch' method"""
-        mock_parser = self.get_mock_parser('users')
+        """Tests of submit_request 'users branch' method"""
+        mock_parser = Mock(method='users')
         mock_stub = Mock()
 
         simple_chat_client.submit_request(mock_stub, mock_parser)
@@ -34,8 +23,9 @@ class TestClient(unittest.TestCase):
 
     @patch('simple_chat_client.send_message')
     def test_submit_request_send_message(self, send_message):
-        """Tests of simple_chat_client.submit_request 'send branch' method"""
-        mock_parser = self.get_mock_parser('send')
+        """Tests of submit_request 'send branch' method"""
+        mock_parser = Mock(method='send', sender='1',
+                           recipient='2', body='Hello')
         mock_stub = Mock()
 
         simple_chat_client.submit_request(mock_stub, mock_parser)
@@ -45,10 +35,8 @@ class TestClient(unittest.TestCase):
 
     @patch('simple_chat_client.receive_messages')
     def test_submit_request_receive_messages(self, receive_messages):
-        """Tests of simple_chat_client.submit_request
-        'receive branch' method
-        """
-        mock_parser = self.get_mock_parser('receive')
+        """Tests of submit_request 'receive branch' method"""
+        mock_parser = Mock(method='receive', recipient='2')
         mock_stub = Mock()
 
         simple_chat_client.submit_request(mock_stub, mock_parser)
@@ -56,13 +44,11 @@ class TestClient(unittest.TestCase):
                                                  mock_parser.recipient)
 
     def test_validate_send_message_data(self):
-        """Tests of simple_chat_client.validate_send_message_data method"""
+        """Tests of validate_send_message_data method"""
         simple_chat_client.validate_send_message_data("1234", "1111", "Hello!")
 
     def test_validate_send_message_data_error(self):
-        """Tests of simple_chat_client.validate_send_message_data
-        method values errors
-        """
+        """Tests of validate_send_message_data method values errors"""
         with self.assertRaises(ValueError):
             simple_chat_client.validate_send_message_data("", "1111", "Hello!")
 
@@ -73,25 +59,23 @@ class TestClient(unittest.TestCase):
             simple_chat_client.validate_send_message_data("1234", "1111", "")
 
     def test_validate_receive_messages_data(self):
-        """Tests of simple_chat_client.validate_receive_messages_data method"""
+        """Tests of validate_receive_messages_data method"""
         simple_chat_client.validate_receive_messages_data("1234")
 
     def test_validate_receive_messages_data_error(self):
-        """Tests of simple_chat_client.validate_receive_messages_data
-        method value error
-        """
+        """Tests of validate_receive_messages_data method value error"""
         with self.assertRaises(ValueError):
             simple_chat_client.validate_receive_messages_data("")
 
     @patch('builtins.print')
     @patch('simple_chat_pb2_grpc.SimpleChatStub')
     def test_get_users(self, mock_stub, mock_print):
-        """Tests of simple_chat_client.get_users method"""
+        """Tests of get_users method"""
         login = '111'
         full_name = "Mock User"
 
         mock_stub.GetUsers.return_value = Mock(
-            users=[simple_chat_pb2.User(login=login, full_name=full_name), ])
+            users=[simple_chat_pb2.User(login=login, full_name=full_name)])
 
         simple_chat_client.get_users(mock_stub)
         mock_stub.GetUsers.assert_called_once()
@@ -102,7 +86,7 @@ class TestClient(unittest.TestCase):
     @patch('builtins.print')
     @patch('simple_chat_pb2_grpc.SimpleChatStub')
     def test_send_message(self, mock_stub, mock_print):
-        """Tests of simple_chat_client.send_message method"""
+        """Tests of send_message method"""
         sender = '1'
         recipient = '2'
         body = 'Hello!'
@@ -123,7 +107,7 @@ class TestClient(unittest.TestCase):
     @patch('builtins.print')
     @patch('simple_chat_pb2_grpc.SimpleChatStub')
     def test_receive_messages(self, mock_stub, mock_print):
-        """Tests of simple_chat_client.receive_messages method"""
+        """Tests of receive_messages method"""
         sender = '111'
         recipient = '123'
         body = 'Hello!'
