@@ -42,3 +42,11 @@ python simple_chat_client.py retreive -r [recipient]
 
 # where [recipient] is a recipient login  
 ```
+
+### TESTS
+
+For launching tests we must be in the tests directory 
+and write following command:
+```
+python -m unittest discover .
+```
